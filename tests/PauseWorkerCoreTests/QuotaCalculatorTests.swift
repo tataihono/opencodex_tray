@@ -8,87 +8,44 @@ final class QuotaCalculatorTests: XCTestCase {
     ]
 
     func testTrayFloorsSumOfProEquivalentRemainingAllowances() throws {
-        let summary = try QuotaCalculator.summarize(
-            accounts: accounts,
-            targetAlias: "workmate",
-            thresholdPercent: 70
-        )
+        let summary = QuotaCalculator.summarize(accounts: accounts)
 
-        XCTAssertEqual(summary.trayPercentage, 4)
+        XCTAssertEqual(summary.trayPercentage, 11)
         XCTAssertEqual(summary.rows, [
             AccountAllowance(accountId: "main-id", label: "main", remainingPercent: 0, totalPercent: 100),
-            AccountAllowance(accountId: "friend-id", label: "workmate", remainingPercent: 4.25, totalPercent: 17.5),
+            AccountAllowance(accountId: "friend-id", label: "workmate", remainingPercent: 11.75, totalPercent: 25),
         ])
     }
 
     func testTrayTotalCanExceedOneHundredPercent() throws {
-        let summary = try QuotaCalculator.summarize(
-            accounts: [
+        let summary = QuotaCalculator.summarize(accounts: [
                 OpenCodexAccount(id: "target-id", alias: "target", plan: "pro", isMain: false, paused: false, weeklyUsedPercent: 0),
                 OpenCodexAccount(id: "other-id", alias: "other", plan: "pro", isMain: false, paused: false, weeklyUsedPercent: 0),
-            ],
-            targetAlias: "target",
-            thresholdPercent: 70
-        )
+            ])
 
-        XCTAssertEqual(summary.trayPercentage, 170)
+        XCTAssertEqual(summary.trayPercentage, 200)
     }
 
     func testMissingQuotaMakesAggregateUnknownWithoutInventingCapacity() throws {
-        let summary = try QuotaCalculator.summarize(
-            accounts: [
+        let summary = QuotaCalculator.summarize(accounts: [
                 OpenCodexAccount(id: "main-id", alias: nil, plan: "pro", isMain: true, paused: false, weeklyUsedPercent: nil),
                 accounts[1],
-            ],
-            targetAlias: "workmate",
-            thresholdPercent: 70
-        )
+            ])
 
         XCTAssertNil(summary.trayPercentage)
         XCTAssertNil(summary.rows[0].remainingPercent)
         XCTAssertEqual(summary.rows[0].totalPercent, 100)
     }
 
-    func testRejectsMissingTargetAlias() {
-        XCTAssertThrowsError(try QuotaCalculator.summarize(
-            accounts: accounts,
-            targetAlias: "missing",
-            thresholdPercent: 70
-        )) { error in
-            XCTAssertEqual(error as? QuotaError, .targetAliasNotFound("missing"))
-        }
-    }
-
-    func testRejectsDuplicateTargetAlias() {
-        XCTAssertThrowsError(try QuotaCalculator.summarize(
-            accounts: accounts + [OpenCodexAccount(
-                id: "duplicate-id",
-                alias: "workmate",
-                plan: "prolite",
-                isMain: false,
-                paused: false,
-                weeklyUsedPercent: 10
-            )],
-            targetAlias: "workmate",
-            thresholdPercent: 70
-        )) { error in
-            XCTAssertEqual(error as? QuotaError, .duplicateTargetAlias("workmate"))
-        }
-    }
-
     func testUnknownPlanMakesItsRowAndAggregateUnknown() throws {
-        let summary = try QuotaCalculator.summarize(
-            accounts: [OpenCodexAccount(
+        let summary = QuotaCalculator.summarize(accounts: [OpenCodexAccount(
                 id: "unknown-id",
                 alias: "workmate",
                 plan: "future-plan",
                 isMain: false,
                 paused: false,
                 weeklyUsedPercent: 20
-            )],
-            targetAlias: "workmate",
-            thresholdPercent: 70
-        )
+            )])
 
         XCTAssertNil(summary.trayPercentage)
         XCTAssertNil(summary.rows[0].remainingPercent)
@@ -96,16 +53,12 @@ final class QuotaCalculatorTests: XCTestCase {
     }
 
     func testFloatingPointNoiseDoesNotFloorExactPercentageOnePointLow() throws {
-        let summary = try QuotaCalculator.summarize(
-            accounts: [
+        let summary = QuotaCalculator.summarize(accounts: [
                 OpenCodexAccount(id: "main-id", alias: nil, plan: "pro", isMain: true, paused: false, weeklyUsedPercent: 17.525),
                 OpenCodexAccount(id: "friend-id", alias: "workmate", plan: "prolite", isMain: false, paused: false, weeklyUsedPercent: 3.9),
-            ],
-            targetAlias: "workmate",
-            thresholdPercent: 70
-        )
+            ])
 
-        XCTAssertEqual(summary.trayPercentage, 99)
+        XCTAssertEqual(summary.trayPercentage, 106)
     }
 
     func testClaudeSummaryConvertsUsedPercentagesToRemainingAllowances() {

@@ -4,9 +4,9 @@
 
 # OpenCodex Quota Tray
 
-Native macOS 14+ menu-bar app. Polls OpenCodex, pauses one exact Codex account
-alias at its configured weekly threshold, and shows Codex and Claude pool
-allowances.
+Native macOS 14+ menu-bar app. Polls a local OpenCodex instance and shows
+Codex and Claude pool allowances. This fork is deliberately read-only: it does
+not switch, pause, add, or remove accounts.
 
 [OpenCodex](https://github.com/lidge-jun/opencodex) is a local proxy that
 multiplexes several Codex and Claude accounts behind one endpoint and tracks
@@ -17,8 +17,7 @@ turns its per-account quota data into at-a-glance pool totals.
 
 ## Quota math
 
-Target alias native allowance equals `PAUSE_THRESHOLD_PERCENT` (default `70`).
-Every other account has `100` native allowance. Display converts all values to
+Every account has `100` native allowance. Display converts all values to
 Pro-equivalent units: `pro = 1`, `prolite = 0.25` because one Pro percentage
 point equals four ProLite percentage points.
 
@@ -31,17 +30,16 @@ tray = floor(sum(Pro-equivalent remaining))
 Example:
 
 ```text
-main (Pro): 0%/100%
-workmate (ProLite): 4.25%/17.5%
-tray: floor(0 + 4.25) = 4%
+main (Pro): 92%/100%
+backup (Pro): 100%/100%
+tray: floor(92 + 100) = 192%
 ```
 
 Tray total represents absolute Pro-equivalent allowance, not ratio. Multiple
 accounts can therefore produce values above `100%`.
 
 Missing weekly quota or unknown plan displays `—` and makes tray total `—`
-rather than inventing capacity. Pause threshold comparison stays in each
-account's native percentage; normalization changes display math only.
+rather than inventing capacity.
 
 Claude converts OpenCodex's raw per-account Anthropic utilization to remaining
 allowance. No plan conversion is applied:
@@ -64,11 +62,11 @@ Finder-launched apps do not reliably inherit shell environment. Create:
 ~/.config/opencodex-quota-tray/config.json
 ```
 
+No configuration file is required for a standard local OpenCodex installation.
+To change the refresh interval, for example:
+
 ```json
-{
-  "targetAccountAlias": "workmate",
-  "pauseThresholdPercent": 70
-}
+{ "pollIntervalMS": 60000 }
 ```
 
 Environment variables remain supported and override config-file values.
@@ -77,15 +75,27 @@ Optional env:
 
 | Variable | Default |
 | --- | --- |
-| `PAUSE_THRESHOLD_PERCENT` | `70` |
 | `POLL_INTERVAL_MS` | `60000` |
 | `REQUEST_TIMEOUT_MS` | `30000` |
 | `OPENCODEX_BASE_URL` | `http://127.0.0.1:10100` |
 | `OPENCODEX_HOME` | `$HOME/.opencodex` |
 
-Alias matching is exact and case-sensitive. Missing or duplicate target alias
-fails closed: no pause request is sent. Admin token is read once from
+The admin token is read once from
 `${OPENCODEX_HOME:-$HOME/.opencodex}/admin-api-token`.
+
+## Security boundary
+
+- OpenCodex must be on a loopback host (`localhost`, `127.0.0.0/8`, or `::1`).
+- HTTP redirects are rejected, so the bearer token cannot follow a redirect to
+  another origin.
+- The URL session is ephemeral with cookies, credential storage, and caching
+  disabled.
+- Runtime requests are limited to read-only account/quota endpoints.
+- There are no analytics, telemetry, update checks, or third-party Swift
+  package dependencies.
+- `NOTARIZE=1` is the only build mode that contacts an external service; it
+  submits the built archive to Apple's notarization service. Normal local builds
+  do not do this.
 
 ## Develop
 

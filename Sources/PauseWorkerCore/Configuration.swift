@@ -3,8 +3,6 @@ import Foundation
 public struct WorkerConfiguration: Equatable, Sendable {
     public let baseURL: URL
     public let adminTokenPath: String
-    public let targetAlias: String
-    public let thresholdPercent: Double
     public let pollInterval: TimeInterval
     public let requestTimeout: TimeInterval
 
@@ -21,10 +19,6 @@ public struct WorkerConfiguration: Equatable, Sendable {
             } catch {
                 throw ConfigurationError.invalid("Quota tray config file is invalid JSON")
             }
-            if merged["TARGET_ACCOUNT_ALIAS"] == nil { merged["TARGET_ACCOUNT_ALIAS"] = file.targetAccountAlias }
-            if merged["PAUSE_THRESHOLD_PERCENT"] == nil, let value = file.pauseThresholdPercent {
-                merged["PAUSE_THRESHOLD_PERCENT"] = String(value)
-            }
             if merged["POLL_INTERVAL_MS"] == nil, let value = file.pollIntervalMS { merged["POLL_INTERVAL_MS"] = String(value) }
             if merged["REQUEST_TIMEOUT_MS"] == nil, let value = file.requestTimeoutMS { merged["REQUEST_TIMEOUT_MS"] = String(value) }
             if merged["OPENCODEX_BASE_URL"] == nil { merged["OPENCODEX_BASE_URL"] = file.openCodexBaseURL }
@@ -34,12 +28,6 @@ public struct WorkerConfiguration: Equatable, Sendable {
     }
 
     public static func resolve(environment: [String: String]) throws -> WorkerConfiguration {
-        if environment["TARGET_ACCOUNT_ID"] != nil {
-            throw ConfigurationError.invalid("TARGET_ACCOUNT_ID is no longer supported; use TARGET_ACCOUNT_ALIAS")
-        }
-        guard let alias = environment["TARGET_ACCOUNT_ALIAS"], !alias.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw ConfigurationError.invalid("TARGET_ACCOUNT_ALIAS is required")
-        }
         guard let home = environment["OPENCODEX_HOME"] ?? environment["HOME"].map({ "\($0)/.opencodex" }) else {
             throw ConfigurationError.invalid("HOME or OPENCODEX_HOME is required")
         }
@@ -53,37 +41,22 @@ public struct WorkerConfiguration: Equatable, Sendable {
         guard url.user == nil, url.password == nil else {
             throw ConfigurationError.invalid("OPENCODEX_BASE_URL must not include credentials")
         }
-        let loopback = isLoopbackHost(host)
-        guard scheme == "https" || loopback else {
-            throw ConfigurationError.invalid("OPENCODEX_BASE_URL must use https for non-loopback hosts")
+        guard isLoopbackHost(host) else {
+            throw ConfigurationError.invalid("OPENCODEX_BASE_URL must use a loopback host")
         }
         guard url.path.isEmpty || url.path == "/", url.query == nil, url.fragment == nil else {
             throw ConfigurationError.invalid("OPENCODEX_BASE_URL must not include a path, query, or fragment")
         }
 
-        let threshold = try number(environment["PAUSE_THRESHOLD_PERCENT"], default: 70, name: "PAUSE_THRESHOLD_PERCENT")
-        guard threshold > 0, threshold <= 100 else {
-            throw ConfigurationError.invalid("PAUSE_THRESHOLD_PERCENT must be greater than 0 and at most 100")
-        }
         let pollMS = try integer(environment["POLL_INTERVAL_MS"], default: 60_000, name: "POLL_INTERVAL_MS")
         let timeoutMS = try integer(environment["REQUEST_TIMEOUT_MS"], default: 30_000, name: "REQUEST_TIMEOUT_MS")
 
         return WorkerConfiguration(
             baseURL: url,
             adminTokenPath: URL(fileURLWithPath: home).appendingPathComponent("admin-api-token").path,
-            targetAlias: alias,
-            thresholdPercent: threshold,
             pollInterval: Double(pollMS) / 1_000,
             requestTimeout: Double(timeoutMS) / 1_000
         )
-    }
-
-    private static func number(_ raw: String?, default fallback: Double, name: String) throws -> Double {
-        guard let raw, !raw.isEmpty else { return fallback }
-        guard let value = Double(raw), value.isFinite else {
-            throw ConfigurationError.invalid("\(name) must be a finite number")
-        }
-        return value
     }
 
     private static func integer(_ raw: String?, default fallback: Int, name: String) throws -> Int {
@@ -115,8 +88,6 @@ public struct WorkerConfiguration: Equatable, Sendable {
 }
 
 private struct ConfigurationFile: Decodable {
-    let targetAccountAlias: String?
-    let pauseThresholdPercent: Double?
     let pollIntervalMS: Int?
     let requestTimeoutMS: Int?
     let openCodexBaseURL: String?

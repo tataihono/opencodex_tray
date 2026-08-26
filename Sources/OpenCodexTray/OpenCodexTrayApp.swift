@@ -244,11 +244,7 @@ final class TrayViewModel: ObservableObject {
                 timeout: config.requestTimeout
             )
             return TrayViewModel(
-                worker: PauseWorker(
-                    client: client,
-                    targetAlias: config.targetAlias,
-                    thresholdPercent: config.thresholdPercent
-                ),
+                worker: PauseWorker(client: client),
                 interval: config.pollInterval
             )
         } catch {

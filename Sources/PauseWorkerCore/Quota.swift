@@ -103,32 +103,10 @@ public struct ClaudeQuotaSummary: Equatable, Sendable {
     }
 }
 
-public enum QuotaError: Error, Equatable, LocalizedError, Sendable {
-    case targetAliasNotFound(String)
-    case duplicateTargetAlias(String)
-
-    public var errorDescription: String? {
-        switch self {
-        case let .targetAliasNotFound(alias):
-            "Target account alias \"\(alias)\" was not returned by OpenCodex"
-        case let .duplicateTargetAlias(alias):
-            "Target account alias \"\(alias)\" matched multiple OpenCodex accounts"
-        }
-    }
-}
-
 public enum QuotaCalculator {
-    public static func summarize(
-        accounts: [OpenCodexAccount],
-        targetAlias: String,
-        thresholdPercent: Double
-    ) throws -> QuotaSummary {
-        let targetMatches = accounts.filter { $0.alias == targetAlias }
-        if targetMatches.isEmpty { throw QuotaError.targetAliasNotFound(targetAlias) }
-        if targetMatches.count > 1 { throw QuotaError.duplicateTargetAlias(targetAlias) }
-
+    public static func summarize(accounts: [OpenCodexAccount]) -> QuotaSummary {
         let rows = accounts.map { account in
-            let nativeTotal = account.alias == targetAlias ? thresholdPercent : 100
+            let nativeTotal = 100.0
             let factor = proEquivalentFactor(plan: account.plan)
             let total = factor.map { nativeTotal * $0 }
             let remaining = account.weeklyUsedPercent.flatMap { used in
