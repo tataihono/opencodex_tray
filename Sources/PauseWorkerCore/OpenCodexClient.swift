@@ -95,6 +95,7 @@ public enum OpenCodexResponseDecoder {
         try JSONDecoder().decode(AccountsResponse.self, from: data).accounts.map { dto in
             OpenCodexAccount(
                 id: dto.id,
+                email: dto.email,
                 alias: dto.alias,
                 plan: dto.plan,
                 isMain: dto.isMain ?? false,
@@ -133,6 +134,7 @@ public enum OpenCodexClientError: Error, LocalizedError, Sendable {
 private struct AccountsResponse: Decodable { let accounts: [AccountDTO] }
 private struct AccountDTO: Decodable {
     let id: String
+    let email: String?
     let alias: String?
     let plan: String?
     let isMain: Bool?

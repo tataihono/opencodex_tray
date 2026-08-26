@@ -2,6 +2,7 @@ import Foundation
 
 public struct OpenCodexAccount: Equatable, Sendable {
     public let id: String
+    public let email: String?
     public let alias: String?
     public let plan: String?
     public let isMain: Bool
@@ -10,6 +11,7 @@ public struct OpenCodexAccount: Equatable, Sendable {
 
     public init(
         id: String,
+        email: String? = nil,
         alias: String?,
         plan: String?,
         isMain: Bool,
@@ -17,6 +19,7 @@ public struct OpenCodexAccount: Equatable, Sendable {
         weeklyUsedPercent: Double?
     ) {
         self.id = id
+        self.email = email
         self.alias = alias
         self.plan = plan
         self.isMain = isMain
@@ -105,6 +108,7 @@ public struct ClaudeQuotaSummary: Equatable, Sendable {
 
 public enum QuotaCalculator {
     public static func summarize(accounts: [OpenCodexAccount]) -> QuotaSummary {
+        let accounts = removingMirroredMainAccount(from: accounts)
         let rows = accounts.map { account in
             let nativeTotal = 100.0
             let factor = proEquivalentFactor(plan: account.plan)
@@ -126,6 +130,27 @@ public enum QuotaCalculator {
         }
         let percentage = floorStable(rows.reduce(0) { $0 + ($1.remainingPercent ?? 0) })
         return QuotaSummary(trayPercentage: percentage, rows: rows)
+    }
+
+    private static func removingMirroredMainAccount(
+        from accounts: [OpenCodexAccount]
+    ) -> [OpenCodexAccount] {
+        let mainAccounts = accounts.filter(\.isMain)
+        guard mainAccounts.count == 1,
+              let mainEmail = normalizedEmail(mainAccounts[0].email) else {
+            return accounts
+        }
+        let matchingPoolAccounts = accounts.filter { account in
+            !account.isMain && normalizedEmail(account.email) == mainEmail
+        }
+        guard matchingPoolAccounts.count == 1 else { return accounts }
+        return accounts.filter { !$0.isMain }
+    }
+
+    private static func normalizedEmail(_ email: String?) -> String? {
+        guard let value = email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+              !value.isEmpty else { return nil }
+        return value
     }
 
     private static func proEquivalentFactor(plan: String?) -> Double? {

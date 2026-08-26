@@ -26,6 +26,51 @@ final class QuotaCalculatorTests: XCTestCase {
         XCTAssertEqual(summary.trayPercentage, 200)
     }
 
+    func testMirroredMainAccountIsNotDoubleCounted() {
+        let summary = QuotaCalculator.summarize(accounts: [
+            OpenCodexAccount(
+                id: "__main__",
+                email: "t***a@gmail.com",
+                alias: nil,
+                plan: "pro",
+                isMain: true,
+                paused: true,
+                weeklyUsedPercent: 8
+            ),
+            OpenCodexAccount(
+                id: "personal-id",
+                email: "T***A@GMAIL.COM",
+                alias: "personal",
+                plan: "pro",
+                isMain: false,
+                paused: false,
+                weeklyUsedPercent: 8
+            ),
+            OpenCodexAccount(
+                id: "work-id",
+                email: "t***a@example.com",
+                alias: "work",
+                plan: "pro",
+                isMain: false,
+                paused: false,
+                weeklyUsedPercent: 0
+            ),
+        ])
+
+        XCTAssertEqual(summary.trayPercentage, 192)
+        XCTAssertEqual(summary.rows.map(\.label), ["personal", "work"])
+    }
+
+    func testAmbiguousMaskedEmailDoesNotDeduplicateAccounts() {
+        let summary = QuotaCalculator.summarize(accounts: [
+            OpenCodexAccount(id: "__main__", email: "t***a@gmail.com", alias: nil, plan: "pro", isMain: true, paused: false, weeklyUsedPercent: 8),
+            OpenCodexAccount(id: "personal-a", email: "t***a@gmail.com", alias: "personal-a", plan: "pro", isMain: false, paused: false, weeklyUsedPercent: 8),
+            OpenCodexAccount(id: "personal-b", email: "t***a@gmail.com", alias: "personal-b", plan: "pro", isMain: false, paused: false, weeklyUsedPercent: 8),
+        ])
+
+        XCTAssertEqual(summary.rows.count, 3)
+    }
+
     func testMissingQuotaMakesAggregateUnknownWithoutInventingCapacity() throws {
         let summary = QuotaCalculator.summarize(accounts: [
                 OpenCodexAccount(id: "main-id", alias: nil, plan: "pro", isMain: true, paused: false, weeklyUsedPercent: nil),
