@@ -98,19 +98,47 @@ private struct TrayStatusLabel: View {
                 accessibilityLabel: accessibilityLabel
             )
         } else if let codexIcon = ProviderIconStore.cgImage(named: "ProviderIcon-codex") {
-            HStack(spacing: 3) {
-                Image(decorative: codexIcon, scale: 1)
-                    .resizable()
-                    .renderingMode(.template)
-                    .frame(width: 14, height: 14)
-                Text(codexPercentage).monospacedDigit()
-            }
-            .accessibilityLabel(accessibilityLabel)
+            Self.codexStatusImage(
+                codexIcon: codexIcon,
+                codexPercentage: codexPercentage,
+                accessibilityLabel: accessibilityLabel
+            )
         } else {
             Text("Codex \(codexPercentage)")
                 .monospacedDigit()
                 .accessibilityLabel(accessibilityLabel)
         }
+    }
+
+    private static func codexStatusImage(
+        codexIcon: CGImage,
+        codexPercentage: String,
+        accessibilityLabel: String
+    ) -> Image {
+        let height: CGFloat = 16
+        let iconSize: CGFloat = 14
+        let iconTextGap: CGFloat = 3
+        let fontSize = NSFont.systemFontSize
+        let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let textWidth = ceil((codexPercentage as NSString).size(withAttributes: attributes).width)
+        let width = iconSize + iconTextGap + textWidth
+        let textFont = Font.system(size: fontSize).monospacedDigit()
+
+        return Image(size: CGSize(width: width, height: height), label: Text(accessibilityLabel)) { context in
+            var icon = context.resolve(Image(decorative: codexIcon, scale: 1))
+            icon.shading = .color(.white)
+            context.draw(icon, in: CGRect(x: 0, y: 1, width: iconSize, height: iconSize))
+
+            var text = context.resolve(Text(codexPercentage).font(textFont))
+            text.shading = .color(.white)
+            context.draw(
+                text,
+                at: CGPoint(x: iconSize + iconTextGap, y: height / 2),
+                anchor: .leading
+            )
+        }
+        .renderingMode(.template)
     }
 
     private static func statusImage(
