@@ -46,6 +46,9 @@ private struct ClaudeRefreshResult: Sendable {
 private func fetchClaudeSummary(client: any OpenCodexServing) async -> ClaudeRefreshResult {
     do {
         let accounts = try await client.fetchClaudeAccounts()
+        guard !accounts.isEmpty else {
+            return ClaudeRefreshResult(summary: nil, errorMessage: nil)
+        }
         return ClaudeRefreshResult(
             summary: ClaudeQuotaCalculator.summarize(accounts: accounts),
             errorMessage: nil

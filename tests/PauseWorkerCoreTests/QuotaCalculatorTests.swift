@@ -84,6 +84,14 @@ final class QuotaCalculatorTests: XCTestCase {
         ])
     }
 
+    func testEmptyClaudeSummaryDoesNotInventZeroPercentages() {
+        let summary = ClaudeQuotaCalculator.summarize(accounts: [])
+
+        XCTAssertNil(summary.fiveHourRemainingPercentage)
+        XCTAssertNil(summary.weeklyRemainingPercentage)
+        XCTAssertTrue(summary.rows.isEmpty)
+    }
+
     func testClaudeSummarySumsFiveHourAndWeeklyRemainingAllowancesInDisplayOrder() {
         let summary = ClaudeQuotaCalculator.summarize(accounts: [
             ClaudeAccount(

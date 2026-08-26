@@ -30,10 +30,8 @@ struct OpenCodexTrayApp: App {
                     }
                 }
             }
-            Section("Claude Pool (5h/1w)") {
-                if model.claudeRows.isEmpty {
-                    Text(model.errorMessage == nil && model.claudeErrorMessage == nil ? "Loading…" : "Unavailable")
-                } else {
+            if model.hasClaudeAccounts {
+                Section("Claude Pool (5h/1w)") {
                     ForEach(model.claudeRows) { row in
                         Text(DisplayFormatter.claudeRow(row))
                     }
@@ -70,6 +68,7 @@ struct OpenCodexTrayApp: App {
             .onAppear { model.refreshLaunchAtLogin() }
         } label: {
             TrayStatusLabel(
+                showClaude: model.hasClaudeAccounts,
                 claudeLimits: model.claudeTrayTitle,
                 codexPercentage: model.codexTrayTitle,
                 accessibilityLabel: model.trayAccessibilityLabel
@@ -81,13 +80,15 @@ struct OpenCodexTrayApp: App {
 
 @MainActor
 private struct TrayStatusLabel: View {
+    let showClaude: Bool
     let claudeLimits: String
     let codexPercentage: String
     let accessibilityLabel: String
 
     @ViewBuilder
     var body: some View {
-        if let claudeIcon = ProviderIconStore.cgImage(named: "ProviderIcon-claude"),
+        if showClaude,
+           let claudeIcon = ProviderIconStore.cgImage(named: "ProviderIcon-claude"),
            let codexIcon = ProviderIconStore.cgImage(named: "ProviderIcon-codex") {
             Self.statusImage(
                 claudeIcon: claudeIcon,
@@ -96,8 +97,17 @@ private struct TrayStatusLabel: View {
                 codexPercentage: codexPercentage,
                 accessibilityLabel: accessibilityLabel
             )
+        } else if let codexIcon = ProviderIconStore.cgImage(named: "ProviderIcon-codex") {
+            HStack(spacing: 3) {
+                Image(decorative: codexIcon, scale: 1)
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 14, height: 14)
+                Text(codexPercentage).monospacedDigit()
+            }
+            .accessibilityLabel(accessibilityLabel)
         } else {
-            Text("Claude \(claudeLimits)  Codex \(codexPercentage)")
+            Text("Codex \(codexPercentage)")
                 .monospacedDigit()
                 .accessibilityLabel(accessibilityLabel)
         }
@@ -201,6 +211,7 @@ final class TrayViewModel: ObservableObject {
     @Published private(set) var claudeTrayTitle = "…"
     @Published private(set) var codexTrayTitle = "…"
     @Published private(set) var claudeRows: [ClaudeAccountAllowance] = []
+    @Published private(set) var hasClaudeAccounts = false
     @Published private(set) var codexRows: [AccountAllowance] = []
     @Published private(set) var errorMessage: String?
     @Published private(set) var claudeErrorMessage: String?
@@ -209,7 +220,9 @@ final class TrayViewModel: ObservableObject {
     @Published private(set) var launchAtLoginErrorMessage: String?
 
     var trayAccessibilityLabel: String {
-        "Claude \(claudeTrayTitle), Codex \(codexTrayTitle)"
+        hasClaudeAccounts
+            ? "Claude \(claudeTrayTitle), Codex \(codexTrayTitle)"
+            : "Codex \(codexTrayTitle)"
     }
 
     private let worker: PauseWorker?
@@ -287,10 +300,13 @@ final class TrayViewModel: ObservableObject {
             codexTrayTitle = DisplayFormatter.trayTitle(result.codexSummary.trayPercentage)
             errorMessage = nil
             if let claudeSummary = result.claudeSummary {
+                hasClaudeAccounts = true
                 claudeRows = claudeSummary.rows
                 claudeTrayTitle = DisplayFormatter.claudeTrayTitle(claudeSummary)
             } else {
-                claudeTrayTitle = "!"
+                hasClaudeAccounts = false
+                claudeRows = []
+                claudeTrayTitle = ""
             }
             claudeErrorMessage = result.claudeErrorMessage
         } catch {

@@ -34,6 +34,18 @@ private actor FakeOpenCodexClient: OpenCodexServing {
 }
 
 final class WorkerTests: XCTestCase {
+    func testEmptyClaudePoolIsTreatedAsNotConfigured() async throws {
+        let client = FakeOpenCodexClient(accounts: [
+            OpenCodexAccount(id: "main-id", alias: nil, plan: "pro", isMain: true, paused: false, weeklyUsedPercent: 8),
+        ])
+        let worker = PauseWorker(client: client)
+
+        let result = try await worker.refresh()
+
+        XCTAssertNil(result.claudeSummary)
+        XCTAssertNil(result.claudeErrorMessage)
+    }
+
     func testClaudeFailureDoesNotBlockCodexSummary() async throws {
         let client = FakeOpenCodexClient(
             accounts: [

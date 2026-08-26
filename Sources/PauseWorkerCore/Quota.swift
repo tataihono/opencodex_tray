@@ -155,7 +155,7 @@ public enum ClaudeQuotaCalculator {
     }
 
     private static func aggregate(_ values: [Double?]) -> Int? {
-        guard values.allSatisfy({ $0 != nil }) else { return nil }
+        guard !values.isEmpty, values.allSatisfy({ $0 != nil }) else { return nil }
         return floorStable(values.reduce(0) { $0 + ($1 ?? 0) })
     }
 }
