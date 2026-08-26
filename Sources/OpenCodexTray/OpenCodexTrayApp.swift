@@ -327,7 +327,7 @@ final class TrayViewModel: ObservableObject {
         do {
             let result = try await worker.refresh()
             codexRows = result.codexSummary.rows
-            codexTrayTitle = DisplayFormatter.trayTitle(result.codexSummary.trayPercentage)
+            codexTrayTitle = DisplayFormatter.trayTitle(result.codexSummary)
             errorMessage = nil
             if let claudeSummary = result.claudeSummary {
                 hasClaudeAccounts = true

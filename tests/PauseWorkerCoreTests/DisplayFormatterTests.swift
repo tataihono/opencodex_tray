@@ -3,14 +3,31 @@ import XCTest
 
 final class DisplayFormatterTests: XCTestCase {
     func testFormatsTrayAndAccountRows() {
-        XCTAssertEqual(DisplayFormatter.trayTitle(27), "27%")
-        XCTAssertEqual(DisplayFormatter.trayTitle(nil), "—")
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let resetAt = now.addingTimeInterval((2 * 86_400) + 1)
+        let row = AccountAllowance(
+            accountId: "friend-id",
+            label: "workmate",
+            remainingPercent: 4.25,
+            totalPercent: 17.5,
+            resetAt: resetAt
+        )
+        let summary = QuotaSummary(trayPercentage: 27, rows: [row])
+
+        XCTAssertEqual(DisplayFormatter.trayTitle(summary, now: now), "27% · 3D")
+        XCTAssertEqual(DisplayFormatter.row(row, now: now), "workmate: 4.25% · 3D")
+    }
+
+    func testOmitsResetDaysWhenResetIsUnavailable() {
+        let summary = QuotaSummary(trayPercentage: nil, rows: [])
+
+        XCTAssertEqual(DisplayFormatter.trayTitle(summary), "—")
         XCTAssertEqual(DisplayFormatter.row(AccountAllowance(
             accountId: "friend-id",
             label: "workmate",
             remainingPercent: 4.25,
             totalPercent: 17.5
-        )), "workmate: 4.25%/17.5%")
+        )), "workmate: 4.25%")
     }
 
     func testFormatsClaudeFiveHourThenWeeklyRemainingForTrayAndDropdown() {

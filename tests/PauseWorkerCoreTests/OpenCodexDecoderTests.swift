@@ -3,7 +3,7 @@ import XCTest
 
 final class OpenCodexDecoderTests: XCTestCase {
     func testPreservesAccountPlanForCapacityNormalization() throws {
-        let data = Data(#"{"accounts":[{"id":"friend-id","alias":"workmate","plan":"prolite","isMain":false,"paused":false,"quota":{"weeklyPercent":53}}]}"#.utf8)
+        let data = Data(#"{"accounts":[{"id":"friend-id","alias":"workmate","plan":"prolite","isMain":false,"paused":false,"quota":{"weeklyPercent":53,"weeklyResetAt":1788272447}}]}"#.utf8)
 
         let accounts = try OpenCodexResponseDecoder.decodeAccounts(data)
 
@@ -13,7 +13,8 @@ final class OpenCodexDecoderTests: XCTestCase {
             plan: "prolite",
             isMain: false,
             paused: false,
-            weeklyUsedPercent: 53
+            weeklyUsedPercent: 53,
+            weeklyResetAt: Date(timeIntervalSince1970: 1788272447)
         )])
     }
 

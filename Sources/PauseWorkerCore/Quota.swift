@@ -8,6 +8,7 @@ public struct OpenCodexAccount: Equatable, Sendable {
     public let isMain: Bool
     public let paused: Bool
     public let weeklyUsedPercent: Double?
+    public let weeklyResetAt: Date?
 
     public init(
         id: String,
@@ -16,7 +17,8 @@ public struct OpenCodexAccount: Equatable, Sendable {
         plan: String?,
         isMain: Bool,
         paused: Bool,
-        weeklyUsedPercent: Double?
+        weeklyUsedPercent: Double?,
+        weeklyResetAt: Date? = nil
     ) {
         self.id = id
         self.email = email
@@ -25,6 +27,7 @@ public struct OpenCodexAccount: Equatable, Sendable {
         self.isMain = isMain
         self.paused = paused
         self.weeklyUsedPercent = weeklyUsedPercent
+        self.weeklyResetAt = weeklyResetAt
     }
 }
 
@@ -56,18 +59,30 @@ public struct AccountAllowance: Equatable, Sendable, Identifiable {
     public let label: String
     public let remainingPercent: Double?
     public let totalPercent: Double?
+    public let resetAt: Date?
 
-    public init(accountId: String, label: String, remainingPercent: Double?, totalPercent: Double?) {
+    public init(
+        accountId: String,
+        label: String,
+        remainingPercent: Double?,
+        totalPercent: Double?,
+        resetAt: Date? = nil
+    ) {
         self.accountId = accountId
         self.label = label
         self.remainingPercent = remainingPercent
         self.totalPercent = totalPercent
+        self.resetAt = resetAt
     }
 }
 
 public struct QuotaSummary: Equatable, Sendable {
     public let trayPercentage: Int?
     public let rows: [AccountAllowance]
+
+    public var nearestResetAt: Date? {
+        rows.compactMap(\.resetAt).min()
+    }
 }
 
 public struct ClaudeAccountAllowance: Equatable, Sendable, Identifiable {
@@ -121,7 +136,8 @@ public enum QuotaCalculator {
                 accountId: account.id,
                 label: label,
                 remainingPercent: remaining,
-                totalPercent: total
+                totalPercent: total,
+                resetAt: account.weeklyResetAt
             )
         }
 

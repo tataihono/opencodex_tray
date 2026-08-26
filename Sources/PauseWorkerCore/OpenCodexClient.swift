@@ -100,7 +100,8 @@ public enum OpenCodexResponseDecoder {
                 plan: dto.plan,
                 isMain: dto.isMain ?? false,
                 paused: dto.paused,
-                weeklyUsedPercent: dto.quota?.weeklyPercent
+                weeklyUsedPercent: dto.quota?.weeklyPercent,
+                weeklyResetAt: decodeTimestamp(dto.quota?.weeklyResetAt)
             )
         }
     }
@@ -115,6 +116,12 @@ public enum OpenCodexResponseDecoder {
                 weeklyUsedPercent: dto.quota?.weeklyPercent
             )
         }
+    }
+
+    private static func decodeTimestamp(_ raw: Double?) -> Date? {
+        guard let raw, raw.isFinite, raw > 0 else { return nil }
+        let seconds = raw > 10_000_000_000 ? raw / 1_000 : raw
+        return Date(timeIntervalSince1970: seconds)
     }
 }
 
@@ -144,6 +151,7 @@ private struct AccountDTO: Decodable {
 private struct QuotaDTO: Decodable {
     let fiveHourPercent: Double?
     let weeklyPercent: Double?
+    let weeklyResetAt: Double?
 }
 private struct ClaudeAccountsResponse: Decodable { let accounts: [ClaudeAccountDTO] }
 private struct ClaudeAccountDTO: Decodable {

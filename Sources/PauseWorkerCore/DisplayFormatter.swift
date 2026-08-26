@@ -1,14 +1,20 @@
 import Foundation
 
 public enum DisplayFormatter {
-    public static func trayTitle(_ percentage: Int?) -> String {
-        percentage.map { "\($0)%" } ?? "—"
+    public static func trayTitle(_ summary: QuotaSummary, now: Date = Date()) -> String {
+        let percentage = summary.trayPercentage.map { "\($0)%" } ?? "—"
+        guard let days = daysRemaining(until: summary.nearestResetAt, now: now) else {
+            return percentage
+        }
+        return "\(percentage) · \(days)D"
     }
 
-    public static func row(_ allowance: AccountAllowance) -> String {
+    public static func row(_ allowance: AccountAllowance, now: Date = Date()) -> String {
         let remaining = allowance.remainingPercent.map(format) ?? "—"
-        let total = allowance.totalPercent.map(format) ?? "—"
-        return "\(allowance.label): \(remaining)%/\(total)%"
+        guard let days = daysRemaining(until: allowance.resetAt, now: now) else {
+            return "\(allowance.label): \(remaining)%"
+        }
+        return "\(allowance.label): \(remaining)% · \(days)D"
     }
 
     public static func claudeTrayTitle(_ summary: ClaudeQuotaSummary) -> String {
@@ -32,5 +38,11 @@ public enum DisplayFormatter {
         while result.last == "0" { result.removeLast() }
         if result.last == "." { result.removeLast() }
         return result
+    }
+
+    private static func daysRemaining(until resetAt: Date?, now: Date) -> Int? {
+        guard let resetAt else { return nil }
+        let interval = max(resetAt.timeIntervalSince(now), 0)
+        return Int(ceil(interval / 86_400))
     }
 }

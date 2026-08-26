@@ -15,7 +15,7 @@ enum PauseWorkerOnce {
                 for row in summary.rows { print(DisplayFormatter.claudeRow(row)) }
             }
             if let error = result.claudeErrorMessage { print("Claude error: \(error)") }
-            print("Codex \(DisplayFormatter.trayTitle(result.codexSummary.trayPercentage))")
+            print("Codex \(DisplayFormatter.trayTitle(result.codexSummary))")
             for row in result.codexSummary.rows { print(DisplayFormatter.row(row)) }
         } catch {
             FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8))
