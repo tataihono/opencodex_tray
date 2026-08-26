@@ -115,8 +115,10 @@ private struct TrayStatusLabel: View {
         codexPercentage: String,
         accessibilityLabel: String
     ) -> Image {
-        let height: CGFloat = 16
-        let iconSize: CGFloat = 14
+        // The bundled Codex SVG has roughly 20% internal padding. A 20pt canvas
+        // produces a visible 16px glyph, matching neighbouring status-bar icons.
+        let height: CGFloat = 20
+        let iconSize: CGFloat = 20
         let iconTextGap: CGFloat = 3
         let fontSize = NSFont.systemFontSize
         let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
@@ -128,7 +130,7 @@ private struct TrayStatusLabel: View {
         return Image(size: CGSize(width: width, height: height), label: Text(accessibilityLabel)) { context in
             var icon = context.resolve(Image(decorative: codexIcon, scale: 1))
             icon.shading = .color(.white)
-            context.draw(icon, in: CGRect(x: 0, y: 1, width: iconSize, height: iconSize))
+            context.draw(icon, in: CGRect(x: 0, y: 0, width: iconSize, height: iconSize))
 
             var text = context.resolve(Text(codexPercentage).font(textFont))
             text.shading = .color(.white)
