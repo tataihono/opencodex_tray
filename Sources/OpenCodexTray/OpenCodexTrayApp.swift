@@ -26,7 +26,7 @@ struct OpenCodexTrayApp: App {
                     Text(model.errorMessage == nil ? "Loading…" : "Unavailable")
                 } else {
                     ForEach(model.codexRows) { row in
-                        Text(DisplayFormatter.row(row))
+                        Self.codexRowText(row)
                     }
                 }
             }
@@ -76,6 +76,12 @@ struct OpenCodexTrayApp: App {
         }
         .menuBarExtraStyle(.menu)
     }
+
+    private static func codexRowText(_ row: AccountAllowance) -> Text {
+        let parts = splitResetSuffix(DisplayFormatter.row(row))
+        guard let reset = parts.reset else { return Text(parts.primary) }
+        return Text(parts.primary + " ") + Text(reset).foregroundColor(.secondary)
+    }
 }
 
 @MainActor
@@ -123,8 +129,11 @@ private struct TrayStatusLabel: View {
         let fontSize = NSFont.systemFontSize
         let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
         let attributes: [NSAttributedString.Key: Any] = [.font: font]
-        let textWidth = ceil((codexPercentage as NSString).size(withAttributes: attributes).width)
-        let width = iconSize + iconTextGap + textWidth
+        let textParts = splitResetSuffix(codexPercentage)
+        let primaryWidth = ceil((textParts.primary as NSString).size(withAttributes: attributes).width)
+        let resetGap: CGFloat = textParts.reset == nil ? 0 : 4
+        let resetWidth = ceil(((textParts.reset ?? "") as NSString).size(withAttributes: attributes).width)
+        let width = iconSize + iconTextGap + primaryWidth + resetGap + resetWidth
         let textFont = Font.system(size: fontSize).monospacedDigit()
 
         return Image(size: CGSize(width: width, height: height), label: Text(accessibilityLabel)) { context in
@@ -132,13 +141,23 @@ private struct TrayStatusLabel: View {
             icon.shading = .color(.white)
             context.draw(icon, in: CGRect(x: 0, y: 0, width: iconSize, height: iconSize))
 
-            var text = context.resolve(Text(codexPercentage).font(textFont))
+            var text = context.resolve(Text(textParts.primary).font(textFont))
             text.shading = .color(.white)
+            let primaryX = iconSize + iconTextGap
             context.draw(
                 text,
-                at: CGPoint(x: iconSize + iconTextGap, y: height / 2),
+                at: CGPoint(x: primaryX, y: height / 2),
                 anchor: .leading
             )
+            if let reset = textParts.reset {
+                var resetText = context.resolve(Text(reset).font(textFont))
+                resetText.shading = .color(.white.opacity(0.55))
+                context.draw(
+                    resetText,
+                    at: CGPoint(x: primaryX + primaryWidth + resetGap, y: height / 2),
+                    anchor: .leading
+                )
+            }
         }
         .renderingMode(.template)
     }
@@ -158,7 +177,11 @@ private struct TrayStatusLabel: View {
         let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
         let attributes: [NSAttributedString.Key: Any] = [.font: font]
         let claudeTextWidth = ceil((claudeLimits as NSString).size(withAttributes: attributes).width)
-        let codexTextWidth = ceil((codexPercentage as NSString).size(withAttributes: attributes).width)
+        let codexParts = splitResetSuffix(codexPercentage)
+        let codexPrimaryWidth = ceil((codexParts.primary as NSString).size(withAttributes: attributes).width)
+        let codexResetGap: CGFloat = codexParts.reset == nil ? 0 : 4
+        let codexResetWidth = ceil(((codexParts.reset ?? "") as NSString).size(withAttributes: attributes).width)
+        let codexTextWidth = codexPrimaryWidth + codexResetGap + codexResetWidth
         let width = iconSize + iconTextGap + claudeTextWidth
             + groupGap + iconSize + iconTextGap + codexTextWidth
         let textFont = Font.system(size: fontSize).monospacedDigit()
@@ -188,16 +211,33 @@ private struct TrayStatusLabel: View {
                 in: CGRect(x: codexIconX, y: 1, width: iconSize, height: iconSize)
             )
 
-            var codexText = context.resolve(Text(codexPercentage).font(textFont))
+            var codexText = context.resolve(Text(codexParts.primary).font(textFont))
             codexText.shading = .color(.white)
+            let codexTextX = codexIconX + iconSize + iconTextGap
             context.draw(
                 codexText,
-                at: CGPoint(x: codexIconX + iconSize + iconTextGap, y: height / 2),
+                at: CGPoint(x: codexTextX, y: height / 2),
                 anchor: .leading
             )
+            if let reset = codexParts.reset {
+                var resetText = context.resolve(Text(reset).font(textFont))
+                resetText.shading = .color(.white.opacity(0.55))
+                context.draw(
+                    resetText,
+                    at: CGPoint(x: codexTextX + codexPrimaryWidth + codexResetGap, y: height / 2),
+                    anchor: .leading
+                )
+            }
         }
         .renderingMode(.template)
     }
+}
+
+private func splitResetSuffix(_ value: String) -> (primary: String, reset: String?) {
+    guard let space = value.lastIndex(of: " ") else { return (value, nil) }
+    let suffix = String(value[value.index(after: space)...])
+    guard suffix.hasSuffix("d"), Int(suffix.dropLast()) != nil else { return (value, nil) }
+    return (String(value[..<space]), suffix)
 }
 
 @MainActor

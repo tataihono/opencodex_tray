@@ -6,7 +6,7 @@ public enum DisplayFormatter {
         guard let days = daysRemaining(until: summary.nearestResetAt, now: now) else {
             return percentage
         }
-        return "\(percentage) · \(days)D"
+        return "\(percentage) \(days)d"
     }
 
     public static func row(_ allowance: AccountAllowance, now: Date = Date()) -> String {
@@ -14,7 +14,7 @@ public enum DisplayFormatter {
         guard let days = daysRemaining(until: allowance.resetAt, now: now) else {
             return "\(allowance.label): \(remaining)%"
         }
-        return "\(allowance.label): \(remaining)% · \(days)D"
+        return "\(allowance.label): \(remaining)% \(days)d"
     }
 
     public static func claudeTrayTitle(_ summary: ClaudeQuotaSummary) -> String {

@@ -14,8 +14,8 @@ final class DisplayFormatterTests: XCTestCase {
         )
         let summary = QuotaSummary(trayPercentage: 27, rows: [row])
 
-        XCTAssertEqual(DisplayFormatter.trayTitle(summary, now: now), "27% · 3D")
-        XCTAssertEqual(DisplayFormatter.row(row, now: now), "workmate: 4.25% · 3D")
+        XCTAssertEqual(DisplayFormatter.trayTitle(summary, now: now), "27% 3d")
+        XCTAssertEqual(DisplayFormatter.row(row, now: now), "workmate: 4.25% 3d")
     }
 
     func testOmitsResetDaysWhenResetIsUnavailable() {
