@@ -35,6 +35,7 @@ make_fixture() {
   mkdir -p "$TEST_ROOT/scripts" "$TEST_ROOT/Resources" "$TEST_ROOT/fake-bin" "$TEST_ROOT/swift-bin"
   cp "$PROJECT_ROOT/scripts/build-app.sh" "$TEST_ROOT/scripts/build-app.sh"
   touch "$TEST_ROOT/Resources/Info.plist" "$TEST_ROOT/Resources/AppIcon.icns"
+  touch "$TEST_ROOT/Resources/WidgetInfo.plist" "$TEST_ROOT/Resources/Widget.entitlements"
 
   cat > "$TEST_ROOT/fake-bin/swift" <<'EOF'
 #!/bin/zsh
@@ -43,7 +44,9 @@ print -r -- "swift|$*" >> "$COMMAND_LOG"
 mkdir -p "$FAKE_SWIFT_BIN/OpenCodexPauseWorker_OpenCodexTray.bundle"
 touch "$FAKE_SWIFT_BIN/OpenCodexPauseWorker_OpenCodexTray.bundle/ProviderIcon.svg"
 touch "$FAKE_SWIFT_BIN/OpenCodexTray"
+touch "$FAKE_SWIFT_BIN/OpenCodexWidget"
 chmod 755 "$FAKE_SWIFT_BIN/OpenCodexTray"
+chmod 755 "$FAKE_SWIFT_BIN/OpenCodexWidget"
 if [[ " $* " == *" --show-bin-path "* ]]; then
   print -r -- "$FAKE_SWIFT_BIN"
 fi
@@ -106,9 +109,12 @@ test_local_build_stays_adhoc_and_offline() {
 
   local command_log="$(<"$TEST_ROOT/commands.log")"
   assert_contains "$command_log" "codesign|--force --sign - $TEST_ROOT/dist/OpenCodexTray.app"
+  assert_contains "$command_log" "codesign|--force --entitlements $TEST_ROOT/Resources/Widget.entitlements --sign - $TEST_ROOT/dist/OpenCodexTray.app/Contents/PlugIns/OpenCodexWidget.appex"
   assert_not_contains "$command_log" "notarytool"
   assert_not_contains "$command_log" "stapler"
   [[ -d "$TEST_ROOT/dist/OpenCodexTray.app" ]] || fail "local build did not create app bundle"
+  [[ -x "$TEST_ROOT/dist/OpenCodexTray.app/Contents/PlugIns/OpenCodexWidget.appex/Contents/MacOS/OpenCodexWidget" ]] \
+    || fail "local build did not embed the widget extension"
 }
 
 test_build_removes_stale_app_contents() {

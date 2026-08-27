@@ -34,11 +34,17 @@ metadata, and observed network connections from a local build.
 - All account mutation code was removed. Runtime API calls are GET-only.
 - The required target-account alias was removed so all pooled accounts can be
   displayed without introducing a mutation selector.
+- The WidgetKit extension is sandboxed and independently reads quota from the
+  same loopback-only, GET-only client. Its only file exception is read-only
+  access to `~/.opencodex/admin-api-token`; it has no general home-directory
+  read or write access.
 
 ## Verification
 
 - Swift unit tests, build-script tests, and release-artifact tests pass.
-- The built app is ad-hoc signed with no custom entitlements.
+- The host app is ad-hoc signed with no custom entitlements. The embedded
+  widget is separately signed with App Sandbox, outbound network client, and
+  read-only `~/.opencodex/admin-api-token` entitlements.
 - The binary links only Apple system frameworks and Swift runtime libraries.
 - Runtime observation showed connections only to `127.0.0.1:10100`, the local
   OpenCodex proxy.

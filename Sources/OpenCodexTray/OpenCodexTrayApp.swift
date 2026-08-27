@@ -3,6 +3,7 @@ import Darwin
 import PauseWorkerCore
 import ServiceManagement
 import SwiftUI
+import WidgetKit
 
 @main
 struct OpenCodexTrayApp: App {
@@ -366,8 +367,14 @@ final class TrayViewModel: ObservableObject {
         guard let worker else { return }
         do {
             let result = try await worker.refresh()
+            let nextCodexTitle = DisplayFormatter.trayTitle(result.codexSummary)
+            let widgetContentChanged = codexRows != result.codexSummary.rows
+                || codexTrayTitle != nextCodexTitle
             codexRows = result.codexSummary.rows
-            codexTrayTitle = DisplayFormatter.trayTitle(result.codexSummary)
+            codexTrayTitle = nextCodexTitle
+            if widgetContentChanged {
+                WidgetCenter.shared.reloadTimelines(ofKind: "local.opencodex.quota-tray.widget")
+            }
             errorMessage = nil
             if let claudeSummary = result.claudeSummary {
                 hasClaudeAccounts = true

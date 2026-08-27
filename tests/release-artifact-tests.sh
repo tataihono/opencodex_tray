@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 APP="$ROOT/dist/OpenCodexTray.app"
+WIDGET="$APP/Contents/PlugIns/OpenCodexWidget.appex"
 
 verify_resources() {
   local output
@@ -21,5 +22,11 @@ fi
 
 verify_resources "$APP/Contents/MacOS/OpenCodexTray" --verify-resources
 verify_resources swift run --package-path "$ROOT" -c release --skip-build OpenCodexTray --verify-resources
+
+[[ -x "$WIDGET/Contents/MacOS/OpenCodexWidget" ]] \
+  || { print -u2 -- "FAIL: widget extension is not embedded"; exit 1; }
+[[ "$(plutil -extract NSExtension.NSExtensionPointIdentifier raw -o - "$WIDGET/Contents/Info.plist")" == "com.apple.widgetkit-extension" ]] \
+  || { print -u2 -- "FAIL: widget extension point is invalid"; exit 1; }
+codesign --verify --strict "$WIDGET"
 
 print -- "PASS: release artifact is path-clean and resolves resources"

@@ -3,26 +3,27 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>OpenCodex Quota</string>
+    <string>OpenCodex Usage</string>
     <key>CFBundleExecutable</key>
-    <string>OpenCodexTray</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
+    <string>OpenCodexWidget</string>
     <key>CFBundleIdentifier</key>
-    <string>local.opencodex.quota-tray</string>
+    <string>local.opencodex.quota-tray.widget</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>OpenCodexTray</string>
+    <string>OpenCodexWidget</string>
     <key>CFBundlePackageType</key>
-    <string>APPL</string>
+    <string>XPC!</string>
     <key>CFBundleShortVersionString</key>
     <string>0.3.0</string>
     <key>CFBundleVersion</key>
     <string>4</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
-    <key>LSUIElement</key>
-    <true/>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.widgetkit-extension</string>
+    </dict>
 </dict>
 </plist>

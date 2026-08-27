@@ -5,8 +5,9 @@
 # OpenCodex Quota Tray
 
 Native macOS 14+ menu-bar app. Polls a local OpenCodex instance and shows
-Codex and Claude pool allowances. This fork is deliberately read-only: it does
-not switch, pause, add, or remove accounts.
+Codex and Claude pool allowances. It also includes a native macOS desktop and
+Notification Center widget. This fork is deliberately read-only: it does not
+switch, pause, add, or remove accounts.
 
 [OpenCodex](https://github.com/lidge-jun/opencodex) is a local proxy that
 multiplexes several Codex and Claude accounts behind one endpoint and tracks
@@ -83,6 +84,19 @@ Optional env:
 The admin token is read once from
 `${OPENCODEX_HOME:-$HOME/.opencodex}/admin-api-token`.
 
+The widget supports the standard local installation only:
+`http://127.0.0.1:10100` with the token at
+`~/.opencodex/admin-api-token`. The tray app continues to support the optional
+configuration above.
+
+## Add the widget
+
+Launch `OpenCodexTray.app` once, then right-click the desktop or an existing
+widget and choose **Edit Widgets**. Search for **OpenCodex** and add either the
+small overview or medium per-account widget. WidgetKit refreshes on its own
+timeline, and the running tray app requests a refresh whenever displayed Codex
+quota changes.
+
 ## Security boundary
 
 - OpenCodex must be on a loopback host (`localhost`, `127.0.0.0/8`, or `::1`).
@@ -91,6 +105,9 @@ The admin token is read once from
 - The URL session is ephemeral with cookies, credential storage, and caching
   disabled.
 - Runtime requests are limited to read-only account/quota endpoints.
+- The widget extension is sandboxed. It has outbound network access and a
+  read-only exception limited to `~/.opencodex/admin-api-token`; the same
+  loopback-only client and GET-only quota endpoint are used.
 - There are no analytics, telemetry, update checks, or third-party Swift
   package dependencies.
 - `NOTARIZE=1` is the only build mode that contacts an external service; it
@@ -145,7 +162,7 @@ artifact is `dist/OpenCodexTray.zip`. Environment variables override values
 loaded from `.env`.
 
 Tray title shows Claude icon + remaining Claude pool `5h/1w` allowance, then
-Codex icon + Pro-equivalent Codex pool percentage. Click it for separate
+Codex icon + Pro-equivalent Codex pool percentage and nearest reset. Click it for separate
 `Codex Pool` and `Claude Pool (5h/1w)` sections with per-account rows,
 `Refresh Now`, errors, and `Quit`. `Launch at Login` registers the app through
 macOS Service Management. If macOS requires approval, use

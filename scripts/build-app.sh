@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="${0:A:h:h}"
 APP="$ROOT/dist/OpenCodexTray.app"
 ARCHIVE="$ROOT/dist/OpenCodexTray.zip"
+WIDGET="$APP/Contents/PlugIns/OpenCodexWidget.appex"
 
 typeset -r REQUESTED_NOTARIZE="${NOTARIZE-0}"
 typeset -r SIGNING_IDENTITY_WAS_SET="${+SIGNING_IDENTITY}"
@@ -60,6 +61,7 @@ fi
 
 rm -rf "$APP"
 swift build --package-path "$ROOT" -c release --product OpenCodexTray
+swift build --package-path "$ROOT" -c release --product OpenCodexWidget
 BIN_DIR="$(swift build --package-path "$ROOT" -c release --show-bin-path)"
 
 mkdir -p "$APP/Contents/MacOS"
@@ -67,6 +69,9 @@ install -m 755 "$BIN_DIR/OpenCodexTray" "$APP/Contents/MacOS/OpenCodexTray"
 install -m 644 "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources"
 install -m 644 "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+mkdir -p "$WIDGET/Contents/MacOS"
+install -m 755 "$BIN_DIR/OpenCodexWidget" "$WIDGET/Contents/MacOS/OpenCodexWidget"
+install -m 644 "$ROOT/Resources/WidgetInfo.plist" "$WIDGET/Contents/Info.plist"
 RESOURCE_BUNDLE="$BIN_DIR/OpenCodexPauseWorker_OpenCodexTray.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
   mkdir -p "$APP/Contents/Resources"
@@ -74,6 +79,7 @@ if [[ -d "$RESOURCE_BUNDLE" ]]; then
   cp -R "$RESOURCE_BUNDLE" "$APP/Contents/Resources/"
 fi
 if [[ "$NOTARIZE" == "1" ]]; then
+  codesign --force --options runtime --timestamp --entitlements "$ROOT/Resources/Widget.entitlements" --sign "$SIGNING_IDENTITY" "$WIDGET"
   codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP"
   codesign --verify --deep --strict --verbose=4 "$APP"
 
@@ -101,6 +107,7 @@ if [[ "$NOTARIZE" == "1" ]]; then
 
   print -- "$ARCHIVE"
 else
+  codesign --force --entitlements "$ROOT/Resources/Widget.entitlements" --sign - "$WIDGET"
   codesign --force --sign - "$APP"
 fi
 

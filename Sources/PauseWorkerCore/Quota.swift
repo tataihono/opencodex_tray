@@ -80,6 +80,11 @@ public struct QuotaSummary: Equatable, Sendable {
     public let trayPercentage: Int?
     public let rows: [AccountAllowance]
 
+    public init(trayPercentage: Int?, rows: [AccountAllowance]) {
+        self.trayPercentage = trayPercentage
+        self.rows = rows
+    }
+
     public var nearestResetAt: Date? {
         rows.compactMap(\.resetAt).min()
     }
