@@ -8,7 +8,6 @@ let package = Package(
     products: [
         .library(name: "PauseWorkerCore", targets: ["PauseWorkerCore"]),
         .executable(name: "OpenCodexTray", targets: ["OpenCodexTray"]),
-        .executable(name: "OpenCodexWidget", targets: ["OpenCodexWidget"]),
         .executable(name: "pause-worker-once", targets: ["PauseWorkerOnce"]),
     ],
     targets: [
@@ -18,7 +17,6 @@ let package = Package(
             dependencies: ["PauseWorkerCore"],
             resources: [.process("Resources")]
         ),
-        .executableTarget(name: "OpenCodexWidget", dependencies: ["PauseWorkerCore"]),
         .executableTarget(name: "PauseWorkerOnce", dependencies: ["PauseWorkerCore"]),
         .testTarget(
             name: "PauseWorkerCoreTests",

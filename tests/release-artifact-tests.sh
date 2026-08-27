@@ -28,5 +28,7 @@ verify_resources swift run --package-path "$ROOT" -c release --skip-build OpenCo
 [[ "$(plutil -extract NSExtension.NSExtensionPointIdentifier raw -o - "$WIDGET/Contents/Info.plist")" == "com.apple.widgetkit-extension" ]] \
   || { print -u2 -- "FAIL: widget extension point is invalid"; exit 1; }
 codesign --verify --strict "$WIDGET"
+nm -u "$WIDGET/Contents/MacOS/OpenCodexWidget" | grep -qx '_NSExtensionMain' \
+  || { print -u2 -- "FAIL: widget was not linked as an app extension"; exit 1; }
 
 print -- "PASS: release artifact is path-clean and resolves resources"

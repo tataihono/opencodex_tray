@@ -32,7 +32,7 @@ make_fixture() {
   cleanup
   TEST_ROOT="$(mktemp -d /tmp/opencodex-build-tests.XXXXXX)"
   TEST_ROOT="${TEST_ROOT:A}"
-  mkdir -p "$TEST_ROOT/scripts" "$TEST_ROOT/Resources" "$TEST_ROOT/fake-bin" "$TEST_ROOT/swift-bin"
+  mkdir -p "$TEST_ROOT/scripts" "$TEST_ROOT/Resources" "$TEST_ROOT/fake-bin" "$TEST_ROOT/swift-bin" "$TEST_ROOT/OpenCodexWidget.xcodeproj"
   cp "$PROJECT_ROOT/scripts/build-app.sh" "$TEST_ROOT/scripts/build-app.sh"
   touch "$TEST_ROOT/Resources/Info.plist" "$TEST_ROOT/Resources/AppIcon.icns"
   touch "$TEST_ROOT/Resources/WidgetInfo.plist" "$TEST_ROOT/Resources/Widget.entitlements"
@@ -44,15 +44,30 @@ print -r -- "swift|$*" >> "$COMMAND_LOG"
 mkdir -p "$FAKE_SWIFT_BIN/OpenCodexPauseWorker_OpenCodexTray.bundle"
 touch "$FAKE_SWIFT_BIN/OpenCodexPauseWorker_OpenCodexTray.bundle/ProviderIcon.svg"
 touch "$FAKE_SWIFT_BIN/OpenCodexTray"
-touch "$FAKE_SWIFT_BIN/OpenCodexWidget"
 chmod 755 "$FAKE_SWIFT_BIN/OpenCodexTray"
-chmod 755 "$FAKE_SWIFT_BIN/OpenCodexWidget"
 if [[ " $* " == *" --show-bin-path "* ]]; then
   print -r -- "$FAKE_SWIFT_BIN"
 fi
 if [[ "${FAKE_SWIFT_FAIL:-0}" == "1" ]]; then
   exit 42
 fi
+EOF
+
+  cat > "$TEST_ROOT/fake-bin/xcodebuild" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+print -r -- "xcodebuild|$*" >> "$COMMAND_LOG"
+typeset derived_data=""
+typeset previous=""
+for argument in "$@"; do
+  if [[ "$previous" == "-derivedDataPath" ]]; then derived_data="$argument"; fi
+  previous="$argument"
+done
+[[ -n "$derived_data" ]]
+widget="$derived_data/Build/Products/Release/OpenCodexWidget.appex"
+mkdir -p "$widget/Contents/MacOS"
+touch "$widget/Contents/MacOS/OpenCodexWidget" "$widget/Contents/Info.plist"
+chmod 755 "$widget/Contents/MacOS/OpenCodexWidget"
 EOF
 
   cat > "$TEST_ROOT/fake-bin/codesign" <<'EOF'
@@ -110,6 +125,7 @@ test_local_build_stays_adhoc_and_offline() {
   local command_log="$(<"$TEST_ROOT/commands.log")"
   assert_contains "$command_log" "codesign|--force --sign - $TEST_ROOT/dist/OpenCodexTray.app"
   assert_contains "$command_log" "codesign|--force --entitlements $TEST_ROOT/Resources/Widget.entitlements --sign - $TEST_ROOT/dist/OpenCodexTray.app/Contents/PlugIns/OpenCodexWidget.appex"
+  assert_contains "$command_log" "xcodebuild|-project $TEST_ROOT/OpenCodexWidget.xcodeproj -scheme OpenCodexWidget -configuration Release"
   assert_not_contains "$command_log" "notarytool"
   assert_not_contains "$command_log" "stapler"
   [[ -d "$TEST_ROOT/dist/OpenCodexTray.app" ]] || fail "local build did not create app bundle"

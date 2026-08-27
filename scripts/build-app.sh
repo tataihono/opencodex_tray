@@ -5,6 +5,8 @@ ROOT="${0:A:h:h}"
 APP="$ROOT/dist/OpenCodexTray.app"
 ARCHIVE="$ROOT/dist/OpenCodexTray.zip"
 WIDGET="$APP/Contents/PlugIns/OpenCodexWidget.appex"
+WIDGET_DERIVED_DATA="$ROOT/.build/widget-xcode"
+WIDGET_PRODUCT="$WIDGET_DERIVED_DATA/Build/Products/Release/OpenCodexWidget.appex"
 
 typeset -r REQUESTED_NOTARIZE="${NOTARIZE-0}"
 typeset -r SIGNING_IDENTITY_WAS_SET="${+SIGNING_IDENTITY}"
@@ -61,7 +63,13 @@ fi
 
 rm -rf "$APP"
 swift build --package-path "$ROOT" -c release --product OpenCodexTray
-swift build --package-path "$ROOT" -c release --product OpenCodexWidget
+xcodebuild \
+  -project "$ROOT/OpenCodexWidget.xcodeproj" \
+  -scheme OpenCodexWidget \
+  -configuration Release \
+  -derivedDataPath "$WIDGET_DERIVED_DATA" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 BIN_DIR="$(swift build --package-path "$ROOT" -c release --show-bin-path)"
 
 mkdir -p "$APP/Contents/MacOS"
@@ -69,9 +77,8 @@ install -m 755 "$BIN_DIR/OpenCodexTray" "$APP/Contents/MacOS/OpenCodexTray"
 install -m 644 "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources"
 install -m 644 "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
-mkdir -p "$WIDGET/Contents/MacOS"
-install -m 755 "$BIN_DIR/OpenCodexWidget" "$WIDGET/Contents/MacOS/OpenCodexWidget"
-install -m 644 "$ROOT/Resources/WidgetInfo.plist" "$WIDGET/Contents/Info.plist"
+mkdir -p "$APP/Contents/PlugIns"
+cp -R "$WIDGET_PRODUCT" "$WIDGET"
 RESOURCE_BUNDLE="$BIN_DIR/OpenCodexPauseWorker_OpenCodexTray.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
   mkdir -p "$APP/Contents/Resources"
