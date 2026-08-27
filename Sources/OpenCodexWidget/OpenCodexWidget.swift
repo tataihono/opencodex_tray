@@ -88,6 +88,7 @@ private struct QuotaWidgetProvider: TimelineProvider {
 
 private struct QuotaWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.widgetRenderingMode) private var renderingMode
     let entry: QuotaWidgetEntry
 
     var body: some View {
@@ -103,6 +104,7 @@ private struct QuotaWidgetView: View {
                 unavailableContent
             }
         }
+        .foregroundStyle(primaryColor)
         .containerBackground(for: .widget) {
             LinearGradient(
                 colors: [Color(red: 0.09, green: 0.10, blue: 0.12), Color(red: 0.13, green: 0.15, blue: 0.18)],
@@ -117,10 +119,6 @@ private struct QuotaWidgetView: View {
             header
             Spacer(minLength: 0)
             quotaText(summary)
-            Text("across \(summary.rows.count) accounts")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            accountBar(summary)
         }
         .padding(2)
     }
@@ -131,20 +129,13 @@ private struct QuotaWidgetView: View {
                 header
                 Spacer(minLength: 0)
                 quotaText(summary)
-                Text("total remaining")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-            Divider()
+            Divider().overlay(secondaryColor.opacity(0.35))
             VStack(spacing: 8) {
                 ForEach(summary.rows.prefix(4)) { row in
                     accountRow(row)
                 }
                 Spacer(minLength: 0)
-                Text("Updated \(entry.date, style: .relative) ago")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
         .padding(2)
@@ -153,7 +144,7 @@ private struct QuotaWidgetView: View {
     private var header: some View {
         Label("OpenCodex", systemImage: "circle.hexagongrid.fill")
             .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(secondaryColor)
     }
 
     private func quotaText(_ summary: QuotaSummary) -> some View {
@@ -166,7 +157,7 @@ private struct QuotaWidgetView: View {
                 Text(reset)
                     .font(.headline)
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryColor)
             }
         }
         .minimumScaleFactor(0.7)
@@ -180,27 +171,10 @@ private struct QuotaWidgetView: View {
             Spacer(minLength: 4)
             if let reset = parts.reset {
                 Text(reset)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryColor)
             }
         }
         .font(.caption.monospacedDigit())
-    }
-
-    private func accountBar(_ summary: QuotaSummary) -> some View {
-        HStack(spacing: 3) {
-            ForEach(summary.rows.prefix(4)) { row in
-                Capsule()
-                    .fill(Color.accentColor.opacity(fillOpacity(row)))
-                    .frame(height: 5)
-            }
-        }
-    }
-
-    private func fillOpacity(_ row: AccountAllowance) -> Double {
-        guard let remaining = row.remainingPercent, let total = row.totalPercent, total > 0 else {
-            return 0.2
-        }
-        return 0.25 + 0.75 * min(max(remaining / total, 0), 1)
     }
 
     private var unavailableContent: some View {
@@ -211,7 +185,7 @@ private struct QuotaWidgetView: View {
                 .font(.headline)
             Text("Open the tray app and check that the local OpenCodex service is running.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(secondaryColor)
                 .lineLimit(3)
         }
         .padding(2)
@@ -223,6 +197,14 @@ private struct QuotaWidgetView: View {
         let suffix = String(value[value.index(after: space)...])
         guard suffix.hasSuffix("d"), Int(suffix.dropLast()) != nil else { return (value, nil) }
         return (String(value[..<space]), suffix)
+    }
+
+    private var primaryColor: Color {
+        renderingMode == .fullColor ? .white : .primary
+    }
+
+    private var secondaryColor: Color {
+        renderingMode == .fullColor ? .white.opacity(0.62) : .secondary
     }
 }
 
