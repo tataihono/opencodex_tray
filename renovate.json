@@ -15,5 +15,6 @@
   },
   "lockFileMaintenance": {
     "enabled": true
-  }
+  },
+  "forkProcessing": "enabled"
 }
