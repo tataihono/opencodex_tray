@@ -1,0 +1,38 @@
+name: macOS CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      NOTARIZE: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Report native toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+      - name: Check build script syntax
+        run: |
+          for script in scripts/build-app.sh tests/build-app-tests.sh tests/release-artifact-tests.sh; do
+            zsh -n "$script"
+          done
+      - name: Run Swift unit tests
+        run: swift test
+      - name: Run offline build script regressions
+        run: zsh tests/build-app-tests.sh
+      - name: Verify ad-hoc app and widget artifacts
+        env:
+          SIGNING_IDENTITY: ''
+          NOTARY_PROFILE: ''
+        run: zsh tests/release-artifact-tests.sh
