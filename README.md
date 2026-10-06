@@ -127,6 +127,18 @@ Headless single check:
 swift run pause-worker-once
 ```
 
+GitHub CI runs `swift test`, the offline build-script regression suite and
+`tests/release-artifact-tests.sh` on pull requests and pushes to `main`, using
+the macOS 26 runner and its Xcode toolchain (Swift 6.2 or newer is required by
+`Package.swift`). Artifact checks compile the tray and widget, verify embedded
+resources and validate the ad-hoc widget signature. The resource-only launch
+exits before configuration, token loading or polling.
+
+CI uses no live OpenCodex instance, account token, signing identity or Apple
+notarization profile. Signing/notarization branches in the shell regression
+suite use fake tools; the real artifact build uses `NOTARIZE=0`. Widget gallery
+installation and live quota refresh remain manual acceptance checks.
+
 ## Build app
 
 Local builds use an ad-hoc signature and do not contact Apple:
